@@ -1,0 +1,356 @@
+#include <GL/gl.h>
+#include <GL/glut.h>
+#include <windows.h>
+#include <math.h>
+#include <stdio.h>
+
+// Global animation variables
+float tx = 10, bx = 10, rx = 10, bicycleX = -100;
+float shift = 0;
+float treeAngle = 0;
+
+// ---------------- Midpoint Circle Algorithm ----------------
+void midpointCircle(int cx, int cy, int r)
+{
+    int x = r, y = 0;
+    int p = 1 - r;
+    glBegin(GL_POLYGON);
+    while (x >= y)
+    {
+        glVertex2i(cx + x, cy + y);
+        glVertex2i(cx + y, cy + x);
+        glVertex2i(cx - y, cy + x);
+        glVertex2i(cx - x, cy + y);
+        glVertex2i(cx - x, cy - y);
+        glVertex2i(cx - y, cy - x);
+        glVertex2i(cx + y, cy - x);
+        glVertex2i(cx + x, cy - y);
+        y++;
+        if (p <= 0)
+            p += 2 * y + 1;
+        else
+        {
+            x--;
+            p += 2 * y - 2 * x + 1;
+        }
+    }
+    glEnd();
+}
+
+// ---------------- DDA Line Algorithm ----------------
+void ddaLine(int x0, int y0, int x1, int y1)
+{
+    float dx = x1 - x0;
+    float dy = y1 - y0;
+    float steps = fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy);
+    float xInc = dx / steps;
+    float yInc = dy / steps;
+    float x = x0, y = y0;
+    glBegin(GL_POINTS);
+    for (int i = 0; i <= steps; i++)
+    {
+        glVertex2i(round(x), round(y));
+        x += xInc;
+        y += yInc;
+    }
+    glEnd();
+}
+
+// ---------------- Enhanced Road ----------------
+void enhancedRoad()
+{
+    glColor3ub(64, 64, 64);
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 0); glVertex2d(500, 0); glVertex2d(500, 80); glVertex2d(0, 80);
+    glEnd();
+
+    glColor3ub(96, 96, 96);
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 80); glVertex2d(500, 80); glVertex2d(500, 95); glVertex2d(0, 95);
+    glEnd();
+
+    glColor3ub(255, 255, 0);
+    for (int i = 20; i < 500; i += 60)
+    {
+        glBegin(GL_POLYGON);
+        glVertex2d(i, 40); glVertex2d(i + 25, 40); glVertex2d(i + 25, 45); glVertex2d(i, 45);
+        glEnd();
+    }
+
+    glColor3ub(255, 255, 255);
+    for (int i = 15; i < 500; i += 100)
+    {
+        glBegin(GL_POLYGON);
+        glVertex2d(i, 20); glVertex2d(i + 40, 20); glVertex2d(i + 40, 25); glVertex2d(i, 25);
+        glEnd();
+    }
+
+    glColor3ub(255, 255, 255);
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 10); glVertex2d(500, 10); glVertex2d(500, 15); glVertex2d(0, 15);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 70); glVertex2d(500, 70); glVertex2d(500, 75); glVertex2d(0, 75);
+    glEnd();
+}
+
+// ---------------- Bicycle Animation ----------------
+void bicycle()
+{
+    glPushMatrix();
+    glTranslatef(bicycleX, 0, 0);
+    glColor3ub(0, 0, 139);
+    glBegin(GL_LINE_STRIP);
+    glVertex2d(120, 35); glVertex2d(160, 35); glVertex2d(160, 55); glVertex2d(140, 55);
+    glVertex2d(140, 75); glVertex2d(120, 75);
+    glEnd();
+    glColor3ub(0, 0, 0);
+    midpointCircle(130, 35, 12); midpointCircle(155, 35, 10);
+    glColor3ub(192, 192, 192);
+    glBegin(GL_LINES);
+    glVertex2d(120, 40); glVertex2d(110, 50); glVertex2d(110, 50); glVertex2d(105, 45);
+    glEnd();
+    glColor3ub(139, 69, 19);
+    glBegin(GL_POLYGON);
+    glVertex2d(145, 55); glVertex2d(155, 55); glVertex2d(152, 60); glVertex2d(142, 60);
+    glEnd();
+    glPopMatrix();
+    bicycleX += 0.4; if (bicycleX > 550) bicycleX = -150; glutPostRedisplay();
+}
+
+// ---------------- REALISTIC DETAILED HOUSES ----------------
+void detailedHouse(float x, float y, float scale)
+{
+    glPushMatrix();
+    glTranslatef(x, y, 0);
+    glScalef(scale, scale, 1);
+
+    // Main house body with brick texture effect
+    glColor3ub(210, 180, 140);
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 0); glVertex2d(60, 0); glVertex2d(60, 50); glVertex2d(0, 50);
+    glEnd();
+
+    // Roof
+    glColor3ub(139, 69, 19);
+    glBegin(GL_POLYGON);
+    glVertex2d(-5, 50); glVertex2d(65, 50); glVertex2d(30, 75);
+    glEnd();
+
+    // Door
+    glColor3ub(160, 82, 45);
+    glBegin(GL_POLYGON);
+    glVertex2d(20, 0); glVertex2d(40, 0); glVertex2d(40, 30); glVertex2d(20, 30);
+    glEnd();
+
+    // Door handle
+    glColor3ub(255, 215, 0);
+    glBegin(GL_POLYGON);
+    glVertex2d(42, 15); glVertex2d(45, 15); glVertex2d(45, 18); glVertex2d(42, 18);
+    glEnd();
+
+    // Windows
+    glColor3ub(135, 206, 250);
+    glBegin(GL_POLYGON);
+    glVertex2d(5, 15); glVertex2d(15, 15); glVertex2d(15, 30); glVertex2d(5, 30);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2d(48, 15); glVertex2d(58, 15); glVertex2d(58, 30); glVertex2d(48, 30);
+    glEnd();
+
+    glPopMatrix();
+}
+
+// ---------------- REALISTIC TREE FUNCTIONS ----------------
+void realisticTreeTrunk(int x, int y, int height, int width)
+{
+    // Main trunk with texture (darker at bottom)
+    glColor3ub(101, 67, 33);
+    glBegin(GL_POLYGON);
+    glVertex2d(x-width/2, y); glVertex2d(x+width/2, y);
+    glVertex2d(x+width/4, y+height); glVertex2d(x-width/4, y+height);
+    glEnd();
+
+    // Trunk texture lines
+    glColor3ub(139, 69, 19);
+    ddaLine(x-3, y+10, x+3, y+10);
+    ddaLine(x-2, y+25, x+2, y+25);
+    ddaLine(x-1, y+40, x+1, y+40);
+}
+
+// ---------------- Multi-layered Foliage ----------------
+void treeFoliage(int cx, int cy, int size, float sway)
+{
+    // Multiple layers of foliage for depth
+    glColor3ub(0, 100, 0);  // Dark green outer layer
+    midpointCircle(cx, cy+size/3, size);
+    midpointCircle(cx-size/3, cy+size/4, size*2/3);
+    midpointCircle(cx+size/3, cy+size/4, size*2/3);
+
+    glColor3ub(34, 139, 34);  // Medium green inner layer
+    midpointCircle(cx, cy, size*3/4);
+    midpointCircle(cx-size/4, cy+size/2, size/2);
+    midpointCircle(cx+size/4, cy+size/2, size/2);
+
+    // Light green highlights
+    glColor3ub(124, 252, 0);
+    midpointCircle(cx+size/6, cy-size/6, size/3);
+    midpointCircle(cx-size/6, cy-size/6, size/3);
+}
+
+// ---------------- Main Realistic Tree 1 (Left Side) ----------------
+void mainTree()
+{
+    realisticTreeTrunk(80, 95, 260, 12);
+
+    glPushMatrix();
+    glTranslatef(80, 320, 0);
+    glRotatef(treeAngle, 0, 0, 1);
+    glTranslatef(-80, -320, 0);
+    treeFoliage(80, 320, 45, 0);
+    glPopMatrix();
+
+    treeAngle += 0.08; if (treeAngle > 10) treeAngle = -10;
+    glutPostRedisplay();
+}
+
+// ---------------- Realistic Tree 2 (Medium - Left) ----------------
+void tree2()
+{
+    realisticTreeTrunk(225, 100, 220, 10);
+    treeFoliage(225, 310, 38, 0);
+}
+
+// ---------------- Realistic Tree 3 (Tall - Right) ----------------
+void tree3()
+{
+    realisticTreeTrunk(385, 95, 245, 14);
+    treeFoliage(385, 325, 42, 0);
+}
+
+// ---------------- Small Realistic Trees ----------------
+void smallTree(int x, int y)
+{
+    realisticTreeTrunk(x, y, 35, 6);
+    treeFoliage(x, y+40, 18, 0);
+}
+
+void extraSmallTrees()
+{
+    smallTree(65, 65);
+    smallTree(170, 65);
+    smallTree(420, 75);
+}
+
+// ---------------- Other functions (unchanged) ----------------
+void hills()
+{
+    glColor3ub(34, 139, 34);
+    glBegin(GL_POLYGON);
+    glVertex2d(0, 180); glVertex2d(120, 280); glVertex2d(200, 220); glVertex2d(0, 220);
+    glEnd();
+    glColor3ub(124, 252, 0);
+    glBegin(GL_POLYGON);
+    glVertex2d(150, 220); glVertex2d(320, 320); glVertex2d(400, 260); glVertex2d(150, 260);
+    glEnd();
+    glColor3ub(0, 100, 0);
+    glBegin(GL_POLYGON);
+    glVertex2d(300, 260); glVertex2d(500, 350); glVertex2d(500, 180); glVertex2d(300, 180);
+    glEnd();
+}
+
+void Bushes()
+{
+    glColor3ub(0, 128, 0);
+    midpointCircle(20, 180, 20); midpointCircle(40, 210, 20); midpointCircle(60, 180, 20);
+    glColor3ub(154, 205, 50);
+    midpointCircle(430, 180, 20); midpointCircle(450, 210, 20); midpointCircle(470, 180, 20);
+}
+
+void sun() { glColor3ub(255, 255, 0); midpointCircle(450, 450, 25); }
+
+void clouds() {
+    glColor3ub(255, 255, 255);
+    midpointCircle(90 + shift, 460, 20); midpointCircle(110 + shift, 460, 15); midpointCircle(70 + shift, 460, 15);
+    midpointCircle(185 + shift, 430, 20); midpointCircle(165 + shift, 430, 15); midpointCircle(205 + shift, 430, 15);
+}
+
+void clouds2() {
+    glPushMatrix(); glTranslatef(rx, 0, 0);
+    glColor3ub(200, 200, 200);
+    midpointCircle(460, 460, 20); midpointCircle(445, 460, 15); midpointCircle(475, 460, 15);
+    glPopMatrix();
+    rx += 0.05; if (rx > 100) rx = -500; glutPostRedisplay();
+}
+
+void car() {
+    glPushMatrix(); glTranslatef(tx, 0, 0);
+    glColor3ub(255, 0, 0);
+    glBegin(GL_POLYGON); glVertex2d(410, 45); glVertex2d(490, 45); glVertex2d(485, 75); glVertex2d(410, 75); glEnd();
+    glColor3ub(0, 0, 0); midpointCircle(435, 45, 10); midpointCircle(465, 45, 10); glPopMatrix();
+    tx += 0.7; if (tx > 100) tx = -550; glutPostRedisplay();
+}
+
+void truck() {
+    glPushMatrix(); glTranslatef(bx, 0, 0);
+    glColor3ub(127, 255, 212);
+    glBegin(GL_POLYGON); glVertex2d(450, 45); glVertex2d(505, 45); glVertex2d(505, 115); glVertex2d(450, 115); glEnd();
+    glColor3ub(0, 0, 0); midpointCircle(460, 45, 10); midpointCircle(510, 45, 10); glPopMatrix();
+    bx += 0.5; if (bx > 100) bx = -550; glutPostRedisplay();
+}
+
+// ---------------- Display ----------------
+void display(void)
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glColor3ub(30, 144, 255);
+    glBegin(GL_POLYGON); glVertex2d(0, 500); glVertex2d(500, 500); glVertex2d(500, 0); glVertex2d(0, 0); glEnd();
+
+    hills();
+
+    glColor3ub(34, 139, 34);
+    glBegin(GL_POLYGON); glVertex2d(0, 180); glVertex2d(500, 180); glVertex2d(500, 95); glVertex2d(0, 95); glEnd();
+
+    enhancedRoad();
+
+    // Houses positioned properly along road
+    detailedHouse(70, 100, 1.0);
+    detailedHouse(210, 105, 0.95);
+    detailedHouse(370, 110, 1.05);
+
+    // ALL REALISTIC TREES
+    mainTree();        // Main animated tree (left)
+    tree2();           // Medium tree (left)
+    tree3();           // Tall tree (right)
+    extraSmallTrees(); // Small trees near houses
+
+    Bushes(); sun(); clouds(); clouds2(); car(); truck(); bicycle();
+    glFlush(); glutSwapBuffers();
+}
+
+void init(void) {
+    glClearColor(0, 0.9, 0.9, 0);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 500, 0, 500);
+}
+
+void key(int key, int x, int y) {
+    switch (key) {
+        case GLUT_KEY_LEFT: shift -= 2; break;
+        case GLUT_KEY_RIGHT: shift += 2; break;
+    }
+    glutPostRedisplay();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(900, 700);
+    glutCreateWindow("Realistic Village: Enhanced Trees, Roads & Houses");
+    init();
+    glutDisplayFunc(display);
+    glutSpecialFunc(key);
+    glutMainLoop();
+    return 0;
+}
