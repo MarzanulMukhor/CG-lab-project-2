@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(900, 700);
-    glutCreateWindow("Realistic Village: Enhanced Trees, Roads & Houses");
+    glutCreateWindow("Roadside View of Village");
     init();
     glutDisplayFunc(display);
     glutSpecialFunc(key);
